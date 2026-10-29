@@ -79,14 +79,57 @@ function readManifest() {
 // If there are no issues, "pass" should be true and "findings" empty.
 // ============================================================
 function buildPrompt(diff, manifest) {
-  return `TODO: write your prompt here.
+  return `You are a design system reviewer. Your job is to check a code diff against a design system manifest and decide whether it passes.
 
-Manifest:
+<manifest>
 ${manifest}
+</manifest>
 
-Diff:
-${diff}`;
+<diff>
+${diff}
+</diff>
+
+## What counts as an issue
+
+An issue is a change in the diff that breaks a rule stated in the manifest above. Nothing else counts as an issue.
+
+- Judge only against the rules in the manifest. If something is not covered by a rule in the manifest, do not report it, even if you personally think it is bad practice, inconsistent, or could be improved.
+- Do not report style, naming, performance, accessibility, or correctness problems unless the manifest has a rule about them.
+- Only review lines that were added or modified in the diff (lines starting with "+"). Do not report problems in unchanged context lines or removed lines.
+- If a rule in the manifest is ambiguous and you cannot tell whether the diff breaks it, do not report it.
+- If the diff contains no changes relevant to any rule in the manifest, it passes.
+
+## How to review
+
+Work through this internally before answering:
+1. Read the manifest and list the rules that could apply to the changes in this diff.
+2. For each added or modified line, check whether it breaks any of those rules.
+3. For every violation, identify the exact file, the line, and the specific manifest rule that is broken.
+
+## Output format
+
+Respond with valid JSON only. No markdown code fences, no text before or after the JSON. Use exactly this shape:
+
+{
+  "pass": true or false,
+  "findings": [
+    {
+      "file": "path/to/file",
+      "line": "line number or range from the diff, as a string",
+      "issue": "short description of what is wrong",
+      "reasoning": "which manifest rule is broken, quoting or naming the rule, and why this change breaks it"
+    }
+  ]
 }
+
+Rules for the output:
+- "pass" must be true if and only if "findings" is empty.
+- If there are no issues, return {"pass": true, "findings": []}.
+- Every finding must cite a specific rule from the manifest in its "reasoning". If you cannot point to a rule, it is not a finding.
+- Keep "issue" to one sentence. Use "reasoning" for the explanation.
+- All values must be valid JSON strings (escape quotes and newlines).`;
+}
+
 
 // ============================================================
 // ALREADY WIRED — calls Claude, checks for API errors, and parses
